@@ -1,0 +1,31 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6334:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Ollama (local GPU inference) — already running on host at :11434
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0
+
+volumes:
+  qdrant_storage:
+  redis_data:
+  # ollama_models:

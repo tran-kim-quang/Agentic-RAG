@@ -1,0 +1,33 @@
+include:
+  - docker-compose.yml
+
+services:
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: orchestrator_service/Dockerfile
+    ports:
+      - "8021:8021"
+    environment:
+      - QDRANT_HOST=qdrant
+      - REDIS_HOST=redis
+      - OLLAMA_EMBED_HOST=${OLLAMA_EMBED_HOST:-http://ollama:11434}
+      - OLLAMA_LLM_HOST=${OLLAMA_LLM_HOST:-http://ollama:11434}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+    depends_on:
+      - qdrant
+      - redis
+
+  retrieval:
+    build:
+      context: ..
+      dockerfile: retrieval_service/Dockerfile
+    ports:
+      - "8011:8011"
+    environment:
+      - QDRANT_HOST=qdrant
+      - OLLAMA_EMBED_HOST=${OLLAMA_EMBED_HOST:-http://ollama:11434}
+      - OLLAMA_LLM_HOST=${OLLAMA_LLM_HOST:-http://ollama:11434}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+    depends_on:
+      - qdrant
