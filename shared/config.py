@@ -21,8 +21,18 @@ class Settings:
     ollama_llm_host: str = os.getenv("OLLAMA_LLM_HOST", "http://localhost:11434")
     ollama_api_key: str = os.getenv("OLLAMA_API_KEY", "")
 
-    embed_model: str = os.getenv("EMBED_MODEL", "nomic-embed-text")
+    # Unified LLM provider config
+    # Provider: "ollama" | "openai" | "openai-compatible"
+    llm_provider: str = os.getenv("LLM_PROVIDER", "ollama")
     llm_model: str = os.getenv("LLM_MODEL", "qwen2.5:14b")
+    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+    llm_max_tokens: int = int(os.getenv("LLM_MAX_TOKENS", "4096"))
+
+    # OpenAI-compatible (vLLM, TGI, Together, Groq, etc.)
+    openai_base_url: str = os.getenv("OPENAI_BASE_URL", "")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+
+    embed_model: str = os.getenv("EMBED_MODEL", "nomic-embed-text")
 
     retrieval_top_k: int = int(os.getenv("RETRIEVAL_TOP_K", "5"))
     fast_response_timeout: float = float(os.getenv("FAST_RESPONSE_TIMEOUT", "0.3"))
@@ -32,6 +42,13 @@ class Settings:
         headers = {"Content-Type": "application/json"}
         if self.ollama_api_key:
             headers["Authorization"] = f"Bearer {self.ollama_api_key}"
+        return headers
+
+    def llm_headers(self) -> dict:
+        headers = {"Content-Type": "application/json"}
+        api_key = self.openai_api_key or self.ollama_api_key
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         return headers
 
 

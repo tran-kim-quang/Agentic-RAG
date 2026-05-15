@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as redis
 import httpx
+import os
 from shared.config import settings
 from shared.schemas import UserInput, AgentResponse
 from orchestrator_service.agent import run_agent
@@ -19,6 +20,27 @@ app.add_middleware(
 rdb = redis.Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
 
 
+async def _check_ollama(host: str, api_key: str = ""):
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    async with httpx.AsyncClient(timeout=5.0) as http:
+        resp = await http.get(f"{host}/api/version", headers=headers)
+        return resp.status_code == 200
+
+
+async def _check_openai(base_url: str, api_key: str = ""):
+    base = base_url.rstrip("/")
+    if not base.endswith("/v1"):
+        base = f"{base}/v1"
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    async with httpx.AsyncClient(timeout=5.0) as http:
+        resp = await http.get(f"{base}/models", headers=headers)
+        return resp.status_code == 200
+
+
 @app.get("/health")
 async def health():
     health_status = {"status": "ok", "services": {}}
@@ -30,19 +52,26 @@ async def health():
 
     # Check local embed Ollama
     try:
-        async with httpx.AsyncClient(timeout=5.0) as http:
-            resp = await http.get(f"{settings.ollama_embed_host}/api/version")
-            health_status["services"]["ollama_embed"] = "ok" if resp.status_code == 200 else "unreachable"
+        ok = await _check_ollama(settings.ollama_embed_host)
+        health_status["services"]["ollama_embed"] = "ok" if ok else "unreachable"
     except Exception as e:
         health_status["services"]["ollama_embed"] = f"error: {e}"
 
-    # Check cloud LLM Ollama
+    # Check LLM provider
+    provider = os.getenv("LLM_PROVIDER", "ollama").lower()
     try:
-        async with httpx.AsyncClient(timeout=5.0) as http:
-            resp = await http.get(f"{settings.ollama_llm_host}/api/version", headers=settings.ollama_headers())
-            health_status["services"]["ollama_llm"] = "ok" if resp.status_code == 200 else "unreachable"
+        if provider in ("ollama",):
+            ok = await _check_ollama(settings.ollama_llm_host, settings.ollama_api_key)
+            health_status["services"]["llm"] = "ok" if ok else "unreachable"
+        elif provider in ("openai", "openai-compatible"):
+            base = os.getenv("OPENAI_BASE_URL", settings.ollama_llm_host)
+            key = os.getenv("OPENAI_API_KEY", settings.ollama_api_key)
+            ok = await _check_openai(base, key)
+            health_status["services"]["llm"] = "ok" if ok else "unreachable"
+        else:
+            health_status["services"]["llm"] = f"unknown provider: {provider}"
     except Exception as e:
-        health_status["services"]["ollama_llm"] = f"error: {e}"
+        health_status["services"]["llm"] = f"error: {e}"
 
     all_ok = all(v == "ok" for v in health_status["services"].values())
     health_status["status"] = "ok" if all_ok else "degraded"

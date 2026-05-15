@@ -18,7 +18,7 @@ User / Avatar UI
 
 ```bash
 cp .env.example .env
-# Sửa .env — nếu dùng Ollama Cloud, điền OLLAMA_HOST và OLLAMA_API_KEY
+# Sửa .env — nếu dùng Ollama Cloud, điền OLLAMA_LLM_HOST và OLLAMA_API_KEY
 ```
 
 ### 2. Khởi động infrastructure
@@ -56,7 +56,7 @@ make smoke
 Để dùng Ollama Cloud hoặc remote server:
 
 ```bash
-export OLLAMA_HOST=https://your-ollama-server.com
+export OLLAMA_LLM_HOST=https://api.ollama.com
 export OLLAMA_API_KEY=sk-xxxxxxxx
 ```
 

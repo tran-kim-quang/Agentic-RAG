@@ -7,9 +7,10 @@ services:
       context: ..
       dockerfile: orchestrator_service/Dockerfile
     ports:
-      - "8021:8021"
+      - "8022:8021"
     environment:
       - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
       - REDIS_HOST=redis
       - OLLAMA_EMBED_HOST=${OLLAMA_EMBED_HOST:-http://ollama:11434}
       - OLLAMA_LLM_HOST=${OLLAMA_LLM_HOST:-http://ollama:11434}
@@ -23,9 +24,10 @@ services:
       context: ..
       dockerfile: retrieval_service/Dockerfile
     ports:
-      - "8011:8011"
+      - "8012:8011"
     environment:
       - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
       - OLLAMA_EMBED_HOST=${OLLAMA_EMBED_HOST:-http://ollama:11434}
       - OLLAMA_LLM_HOST=${OLLAMA_LLM_HOST:-http://ollama:11434}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
